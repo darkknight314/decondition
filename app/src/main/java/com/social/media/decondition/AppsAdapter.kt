@@ -10,11 +10,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.social.media.decondition.data.AppDetail
 
 class AppsAdapter(
-    private var appsList: List<AppDetail>,
+    private var appsList: MutableList<AppDetail>,
     private val onAppSelected: (AppDetail) -> Unit
 ) : RecyclerView.Adapter<AppsAdapter.AppViewHolder>() {
-
-    private var selectedPosition = RecyclerView.NO_POSITION
 
     class AppViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         var appName: TextView = itemView.findViewById(R.id.appName)
@@ -31,19 +29,12 @@ class AppsAdapter(
         holder.appName.text = app.appName
         holder.appIcon.setImageDrawable(app.icon)
 
-        holder.itemView.isSelected = (selectedPosition == position)
-
         holder.itemView.setOnClickListener {
             showConfirmationDialog(holder.itemView, app, position)
         }
     }
 
     override fun getItemCount() = appsList.size
-
-    fun filterList(filteredAppsList: List<AppDetail>) {
-        this.appsList = filteredAppsList
-        notifyDataSetChanged()
-    }
 
     private fun showConfirmationDialog(view: View, app: AppDetail, position: Int) {
         val context = view.context
@@ -52,11 +43,16 @@ class AppsAdapter(
             .setMessage("Do you want to select ${app.appName}?")
             .setPositiveButton("Yes") { _, _ ->
                 onAppSelected(app)
-                notifyItemChanged(selectedPosition)
-                selectedPosition = position
-                notifyItemChanged(selectedPosition)
+                appsList.removeAt(position)
+                notifyItemRemoved(position)
+                notifyItemRangeChanged(position, appsList.size)
             }
             .setNegativeButton("No", null)
             .show()
+    }
+
+    fun filterList(filteredAppsList: List<AppDetail>) {
+        this.appsList = filteredAppsList.toMutableList()
+        notifyDataSetChanged()
     }
 }
