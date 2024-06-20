@@ -19,6 +19,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var plusButton: Button
     private lateinit var appsAdapter: AppsAdapter
     private var appsList: List<AppDetail> = listOf()
+    private val selectedApps = mutableSetOf<String>()
+    private val prefsName = "AppSelections"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,21 +30,26 @@ class MainActivity : AppCompatActivity() {
         searchView = findViewById(R.id.searchView)
         appsRecyclerView = findViewById(R.id.appsRecyclerView)
 
+        // Load selected apps from SharedPreferences
+        val sharedPreferences = getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+        selectedApps.addAll(sharedPreferences.getStringSet("selectedApps", emptySet()) ?: emptySet())
+
         plusButton.setOnClickListener {
             if (searchView.visibility == View.VISIBLE) {
                 searchView.visibility = View.GONE
                 appsRecyclerView.visibility = View.GONE
+                hideKeyboard()
             } else {
                 searchView.visibility = View.VISIBLE
                 appsRecyclerView.visibility = View.VISIBLE
                 searchView.requestFocus()
-                searchView.setIconified(false)
-                showKeyboard(appsRecyclerView)
+                searchView.setIconified(false) // Expand the search view if it's iconified
+                showKeyboard(searchView)
             }
         }
 
         appsList = getInstalledApps()
-        appsAdapter = AppsAdapter(appsList)
+        appsAdapter = AppsAdapter(appsList, ::onAppSelected)
         appsRecyclerView.layoutManager = LinearLayoutManager(this)
         appsRecyclerView.adapter = appsAdapter
 
@@ -59,6 +66,16 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
         })
+    }
+
+    private fun onAppSelected(app: AppDetail) {
+        selectedApps.add(app.appName)
+        // Save selected apps to SharedPreferences
+        val sharedPreferences = getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+        with(sharedPreferences.edit()) {
+            putStringSet("selectedApps", selectedApps)
+            apply()
+        }
     }
 
     private fun getInstalledApps(): List<AppDetail> {
@@ -81,8 +98,14 @@ class MainActivity : AppCompatActivity() {
         apps.sortBy { it.appName.lowercase(Locale.ROOT).trim() }
         return apps
     }
+
     private fun showKeyboard(view: View) {
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun hideKeyboard() {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(window.decorView.windowToken, 0)
     }
 }
