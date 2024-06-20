@@ -1,5 +1,6 @@
 package com.social.media.decondition
 
+import android.app.AlertDialog
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,6 +13,8 @@ class AppsAdapter(
     private var appsList: List<AppDetail>,
     private val onAppSelected: (AppDetail) -> Unit
 ) : RecyclerView.Adapter<AppsAdapter.AppViewHolder>() {
+
+    private var selectedPosition = RecyclerView.NO_POSITION
 
     class AppViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         var appName: TextView = itemView.findViewById(R.id.appName)
@@ -28,8 +31,10 @@ class AppsAdapter(
         holder.appName.text = app.appName
         holder.appIcon.setImageDrawable(app.icon)
 
+        holder.itemView.isSelected = (selectedPosition == position)
+
         holder.itemView.setOnClickListener {
-            onAppSelected(app)
+            showConfirmationDialog(holder.itemView, app, position)
         }
     }
 
@@ -38,5 +43,20 @@ class AppsAdapter(
     fun filterList(filteredAppsList: List<AppDetail>) {
         this.appsList = filteredAppsList
         notifyDataSetChanged()
+    }
+
+    private fun showConfirmationDialog(view: View, app: AppDetail, position: Int) {
+        val context = view.context
+        AlertDialog.Builder(context)
+            .setTitle("Confirm Selection")
+            .setMessage("Do you want to select ${app.appName}?")
+            .setPositiveButton("Yes") { _, _ ->
+                onAppSelected(app)
+                notifyItemChanged(selectedPosition)
+                selectedPosition = position
+                notifyItemChanged(selectedPosition)
+            }
+            .setNegativeButton("No", null)
+            .show()
     }
 }
