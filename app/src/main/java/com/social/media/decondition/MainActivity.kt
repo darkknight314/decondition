@@ -2,6 +2,7 @@ package com.social.media.decondition
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.InputMethodManager
@@ -19,6 +20,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var plusButton: Button
     private lateinit var appsAdapter: AppsAdapter
     private var appsList: MutableList<AppDetail> = mutableListOf()
+    private var selectedAppsList: MutableList<AppDetail> = mutableListOf()
+    private var nonSelectedAppsList: MutableList<AppDetail> = mutableListOf()
     private val selectedApps = mutableSetOf<String>()
     private val prefsName = "AppSelections"
 
@@ -31,28 +34,31 @@ class MainActivity : AppCompatActivity() {
         appsRecyclerView = findViewById(R.id.appsRecyclerView)
 
         // Load selected apps from SharedPreferences
-//        clearSelectedApps()
         val sharedPreferences = getSharedPreferences(prefsName, Context.MODE_PRIVATE)
         selectedApps.addAll(sharedPreferences.getStringSet("selectedApps", emptySet()) ?: emptySet())
 
+        // Initialize and display the selected apps by default
+        selectedAppsList = getSelectedApps().toMutableList()
+        appsAdapter = AppsAdapter(selectedAppsList, ::onAppSelected)
+        appsRecyclerView.layoutManager = LinearLayoutManager(this)
+        appsRecyclerView.adapter = appsAdapter
+
+        // Ensure the selected apps list is displayed on startup
+        searchView.visibility = View.GONE
+        appsRecyclerView.visibility = View.VISIBLE
+        appsAdapter.filterList(selectedAppsList)
+
         plusButton.setOnClickListener {
-            if (searchView.visibility == View.VISIBLE) {
-                searchView.visibility = View.GONE
-                appsRecyclerView.visibility = View.GONE
-                hideKeyboard()
-            } else {
                 searchView.visibility = View.VISIBLE
                 appsRecyclerView.visibility = View.VISIBLE
                 searchView.requestFocus()
                 searchView.setIconified(false) // Expand the search view if it's iconified
                 showKeyboard(searchView)
+                // Switch to displaying the non-selected app list
+                nonSelectedAppsList = getNonSelectedApps().toMutableList()
+                appsAdapter.filterList(nonSelectedAppsList)
             }
-        }
 
-        appsList = getInstalledApps()
-        appsAdapter = AppsAdapter(appsList, ::onAppSelected)
-        appsRecyclerView.layoutManager = LinearLayoutManager(this)
-        appsRecyclerView.adapter = appsAdapter
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
@@ -61,7 +67,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun onQueryTextChange(newText: String?): Boolean {
                 newText?.let {
-                    val filteredList = appsList.filter { it.appName.contains(newText, ignoreCase = true) }
+                    val filteredList = nonSelectedAppsList.filter { it.appName.contains(newText, ignoreCase = true) }
                     appsAdapter.filterList(filteredList)
                 }
                 return true
@@ -69,14 +75,29 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    override fun onBackPressed() {
+        if (searchView.visibility == View.VISIBLE) {
+            // Hide search view and show default view
+            searchView.visibility = View.GONE
+            appsAdapter.filterList(selectedAppsList)
+            hideKeyboard()
+        } else {
+            super.onBackPressed()
+        }
+    }
+
     private fun onAppSelected(app: AppDetail) {
-        selectedApps.add(app.appName)
+        selectedApps.add(app.packageName)
         // Save selected apps to SharedPreferences
         val sharedPreferences = getSharedPreferences(prefsName, Context.MODE_PRIVATE)
         with(sharedPreferences.edit()) {
             putStringSet("selectedApps", selectedApps)
             apply()
         }
+        // Update the lists and adapter
+        nonSelectedAppsList.remove(app)
+        selectedAppsList.add(app)
+        appsAdapter.notifyDataSetChanged()
     }
 
     private fun getInstalledApps(): MutableList<AppDetail> {
@@ -91,13 +112,38 @@ class MainActivity : AppCompatActivity() {
 
         for (resolveInfo in packages) {
             val activityInfo = resolveInfo.activityInfo
-            val appName = activityInfo.loadLabel(pm).toString()
-            if(selectedApps.contains(appName))  continue
             val packageName = activityInfo.packageName
+            val appName = activityInfo.loadLabel(pm).toString()
             val icon = activityInfo.loadIcon(pm)
             apps.add(AppDetail(appName, packageName, icon))
         }
         apps.sortBy { it.appName.lowercase(Locale.ROOT).trim() }
+        return apps
+    }
+
+    private fun getSelectedApps(): List<AppDetail> {
+        val pm = packageManager
+        val apps = mutableListOf<AppDetail>()
+
+        for (packageName in selectedApps) {
+            try {
+                val appInfo = pm.getApplicationInfo(packageName, 0)
+                val appName = pm.getApplicationLabel(appInfo).toString()
+                val icon = pm.getApplicationIcon(packageName)
+                apps.add(AppDetail(appName, packageName, icon))
+            } catch (e: PackageManager.NameNotFoundException) {
+                // Handle the case where the package name is not found
+                e.printStackTrace()
+            }
+        }
+        apps.sortBy { it.appName.lowercase(Locale.ROOT).trim() }
+        return apps
+    }
+
+    private fun getNonSelectedApps(): List<AppDetail> {
+        val pm = packageManager
+        val apps = getInstalledApps().toMutableList()
+        apps.removeAll { selectedApps.contains(it.packageName) }
         return apps
     }
 
