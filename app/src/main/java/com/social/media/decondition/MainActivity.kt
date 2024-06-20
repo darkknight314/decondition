@@ -1,8 +1,10 @@
 package com.social.media.decondition
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.SearchView
 import androidx.appcompat.app.AppCompatActivity
@@ -33,6 +35,9 @@ class MainActivity : AppCompatActivity() {
             } else {
                 searchView.visibility = View.VISIBLE
                 appsRecyclerView.visibility = View.VISIBLE
+                searchView.requestFocus()
+                searchView.setIconified(false)
+                showKeyboard(appsRecyclerView)
             }
         }
 
@@ -75,5 +80,9 @@ class MainActivity : AppCompatActivity() {
         }
         apps.sortBy { it.appName.lowercase(Locale.ROOT).trim() }
         return apps
+    }
+    private fun showKeyboard(view: View) {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
     }
 }
