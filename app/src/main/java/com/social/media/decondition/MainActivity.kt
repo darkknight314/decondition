@@ -2,6 +2,8 @@ package com.social.media.decondition
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import android.widget.Button
 import android.widget.SearchView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -9,10 +11,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.social.media.decondition.data.AppDetail
 import java.util.*
 
-
 class MainActivity : AppCompatActivity() {
     private lateinit var appsRecyclerView: RecyclerView
     private lateinit var searchView: SearchView
+    private lateinit var plusButton: Button
     private lateinit var appsAdapter: AppsAdapter
     private var appsList: List<AppDetail> = listOf()
 
@@ -20,8 +22,19 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        appsRecyclerView = findViewById(R.id.appsRecyclerView)
+        plusButton = findViewById(R.id.plusButton)
         searchView = findViewById(R.id.searchView)
+        appsRecyclerView = findViewById(R.id.appsRecyclerView)
+
+        plusButton.setOnClickListener {
+            if (searchView.visibility == View.VISIBLE) {
+                searchView.visibility = View.GONE
+                appsRecyclerView.visibility = View.GONE
+            } else {
+                searchView.visibility = View.VISIBLE
+                appsRecyclerView.visibility = View.VISIBLE
+            }
+        }
 
         appsList = getInstalledApps()
         appsAdapter = AppsAdapter(appsList)
