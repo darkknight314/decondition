@@ -18,7 +18,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var searchView: SearchView
     private lateinit var plusButton: Button
     private lateinit var appsAdapter: AppsAdapter
-    private var appsList: List<AppDetail> = listOf()
+    private var appsList: MutableList<AppDetail> = mutableListOf()
     private val selectedApps = mutableSetOf<String>()
     private val prefsName = "AppSelections"
 
@@ -31,6 +31,7 @@ class MainActivity : AppCompatActivity() {
         appsRecyclerView = findViewById(R.id.appsRecyclerView)
 
         // Load selected apps from SharedPreferences
+//        clearSelectedApps()
         val sharedPreferences = getSharedPreferences(prefsName, Context.MODE_PRIVATE)
         selectedApps.addAll(sharedPreferences.getStringSet("selectedApps", emptySet()) ?: emptySet())
 
@@ -78,7 +79,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun getInstalledApps(): List<AppDetail> {
+    private fun getInstalledApps(): MutableList<AppDetail> {
         val pm = packageManager
         val apps = mutableListOf<AppDetail>()
 
@@ -91,6 +92,7 @@ class MainActivity : AppCompatActivity() {
         for (resolveInfo in packages) {
             val activityInfo = resolveInfo.activityInfo
             val appName = activityInfo.loadLabel(pm).toString()
+            if(selectedApps.contains(appName))  continue
             val packageName = activityInfo.packageName
             val icon = activityInfo.loadIcon(pm)
             apps.add(AppDetail(appName, packageName, icon))
@@ -107,5 +109,14 @@ class MainActivity : AppCompatActivity() {
     private fun hideKeyboard() {
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(window.decorView.windowToken, 0)
+    }
+
+    private fun clearSelectedApps() {
+        val sharedPreferences = getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+        with(sharedPreferences.edit()) {
+            putStringSet("selectedApps", emptySet())
+            apply()
+        }
+        selectedApps.clear()
     }
 }
