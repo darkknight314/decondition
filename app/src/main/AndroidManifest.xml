@@ -35,6 +35,10 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity
+                android:name=".SudokuPuzzleActivity"
+                android:exported="true">
+        </activity>
 
         <service
                 android:name=".AppLaunchAccessibilityService"
