@@ -1,13 +1,17 @@
 package com.social.media.decondition
 
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.provider.Settings
+import android.text.TextUtils
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.SearchView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -49,6 +53,11 @@ class MainActivity : AppCompatActivity() {
         appsAdapter.filterList(selectedAppsList)
 
         plusButton.setOnClickListener {
+            if (searchView.visibility == View.VISIBLE) {
+                searchView.visibility = View.GONE
+                appsAdapter.filterList(selectedAppsList)
+                hideKeyboard()
+            } else {
                 searchView.visibility = View.VISIBLE
                 appsRecyclerView.visibility = View.VISIBLE
                 searchView.requestFocus()
@@ -58,7 +67,7 @@ class MainActivity : AppCompatActivity() {
                 nonSelectedAppsList = getNonSelectedApps().toMutableList()
                 appsAdapter.filterList(nonSelectedAppsList)
             }
-
+        }
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
@@ -73,6 +82,39 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
         })
+
+        // Show the dialog to guide users to enable the accessibility service
+        showAccessibilityServiceDialog()
+    }
+
+    private fun isAccessibilityServiceEnabled(context: Context, service: Class<out android.accessibilityservice.AccessibilityService>): Boolean {
+        val serviceId = "${context.packageName}/${service.name}"
+        val enabledServices = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+        if (!enabledServices.isNullOrEmpty()) {
+            val splitter = TextUtils.SimpleStringSplitter(':')
+            splitter.setString(enabledServices)
+            while (splitter.hasNext()) {
+                val componentName = splitter.next()
+                if (componentName.equals(serviceId, ignoreCase = true)) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    private fun showAccessibilityServiceDialog() {
+        if (!isAccessibilityServiceEnabled(this, AppLaunchAccessibilityService::class.java)) {
+            AlertDialog.Builder(this)
+                .setTitle("Enable Accessibility Service")
+                .setMessage("Please enable the accessibility service to allow this app to monitor app launches.")
+                .setPositiveButton("Go to Settings") { _, _ ->
+                    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                    startActivity(intent)
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
     }
 
     override fun onBackPressed() {
@@ -143,7 +185,7 @@ class MainActivity : AppCompatActivity() {
     private fun getNonSelectedApps(): List<AppDetail> {
         val pm = packageManager
         val apps = getInstalledApps().toMutableList()
-        apps.removeAll { selectedApps.contains(it.packageName) }
+        apps.removeAll { selectedApps.contains(it.packageName) || this.packageName.equals(it.packageName) }
         return apps
     }
 
