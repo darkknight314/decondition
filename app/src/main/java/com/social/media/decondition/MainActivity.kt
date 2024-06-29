@@ -20,7 +20,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var appsRecyclerView: RecyclerView
     private lateinit var searchView: SearchView
     private lateinit var plusButton: Button
-    private lateinit var launchSudokuButton: Button
     private lateinit var appsAdapter: AppsAdapter
     private var appsList: MutableList<AppDetail> = mutableListOf()
     private var selectedAppsList: MutableList<AppDetail> = mutableListOf()
@@ -34,7 +33,6 @@ class MainActivity : AppCompatActivity() {
         plusButton = findViewById(R.id.plusButton)
         searchView = findViewById(R.id.searchView)
         appsRecyclerView = findViewById(R.id.appsRecyclerView)
-        launchSudokuButton = findViewById(R.id.launchSudokuButton)
 
         selectedApps.addAll(SharedPreferencesUtils.getSelectedApps(this))
 
@@ -81,11 +79,6 @@ class MainActivity : AppCompatActivity() {
         })
 
         showAccessibilityServiceDialog()
-
-        launchSudokuButton.setOnClickListener {
-            val intent = Intent(this, SudokuPuzzleActivity::class.java)
-            startActivity(intent)
-        }
     }
 
     private fun showAccessibilityServiceDialog() {
