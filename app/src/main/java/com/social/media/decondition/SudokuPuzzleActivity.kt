@@ -8,12 +8,14 @@ import android.view.ViewGroup.LayoutParams
 import android.text.Editable
 import android.text.TextWatcher
 import android.widget.Toast
+import kotlinx.coroutines.*
 
 class SudokuPuzzleActivity : AppCompatActivity() {
 
     private lateinit var dbHelper: SudokuDatabaseHelper
     private lateinit var solution: String
     private lateinit var editTexts: Array<EditText?>
+    private var appPackageName: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,9 +26,12 @@ class SudokuPuzzleActivity : AppCompatActivity() {
         val randomPuzzle = dbHelper.getRandomSudokuPuzzle()
         randomPuzzle?.let {
             solution = it.solution
-            println("SOLUTION: "+solution)
-            displaySudokuPuzzle(it.puzzle)
+            var puzzle = solution.substring(0, 10) + '0' + solution.substring(10 + 1)
+            displaySudokuPuzzle(puzzle)
+            // displaySudokuPuzzle(it.puzzle)
         }
+
+        appPackageName = intent.getStringExtra("APP_PACKAGE_NAME")
     }
 
     private fun displaySudokuPuzzle(puzzle: String) {
@@ -85,8 +90,44 @@ class SudokuPuzzleActivity : AppCompatActivity() {
 
         if (correct) {
             Toast.makeText(this, "Congratulations! The puzzle is solved correctly.", Toast.LENGTH_LONG).show()
+            setPuzzleSolvedFlag()
+            launchOriginalApp()
+            finish()
         } else {
             Toast.makeText(this, "The solution is incorrect. Please try again.", Toast.LENGTH_LONG).show()
         }
+    }
+
+    private fun setPuzzleSolvedFlag() {
+        val sharedPreferences = getSharedPreferences("AppSelections", MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putBoolean("PUZZLE_SOLVED_$appPackageName", true)
+        editor.putBoolean("SESSION_ACTIVE_$appPackageName", true)
+        editor.apply()
+        println("Setting as solved for "+appPackageName)
+    }
+
+    private fun launchOriginalApp() {
+        appPackageName?.let {
+            val launchIntent = packageManager.getLaunchIntentForPackage(it)
+            if (launchIntent != null) {
+                setPuzzleSolvedFlag()
+                startActivity(launchIntent)
+                GlobalScope.launch(Dispatchers.Main) {
+                    delay(10000)
+                    resetSessionFlag()
+                }
+            } else {
+                Toast.makeText(this, "Unable to launch the app.", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun resetSessionFlag() {
+        val sharedPreferences = getSharedPreferences("AppSelections", MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putBoolean("SESSION_ACTIVE_$appPackageName", false)
+        println("resetting session flag")
+        editor.apply()
     }
 }

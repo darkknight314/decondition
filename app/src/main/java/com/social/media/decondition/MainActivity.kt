@@ -38,6 +38,9 @@ class MainActivity : AppCompatActivity() {
 
         selectedApps.addAll(SharedPreferencesUtils.getSelectedApps(this))
 
+        // Reset session flags for all selected apps
+        resetSessionFlags()
+
         selectedAppsList = AppUtils.getSelectedApps(this, selectedApps).toMutableList()
         appsAdapter = AppsAdapter(selectedAppsList, ::onAppSelected)
         appsRecyclerView.layoutManager = LinearLayoutManager(this)
@@ -115,5 +118,14 @@ class MainActivity : AppCompatActivity() {
         nonSelectedAppsList.remove(app)
         selectedAppsList.add(app)
         appsAdapter.notifyDataSetChanged()
+    }
+
+    private fun resetSessionFlags() {
+        val sharedPreferences = getSharedPreferences("AppSelections", MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        for (packageName in selectedApps) {
+            editor.putBoolean("SESSION_ACTIVE_$packageName", false)
+        }
+        editor.apply()
     }
 }

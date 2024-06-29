@@ -29,20 +29,27 @@ class AppLaunchAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        Log.d("MyAccessibilityService", "Accessibility event received: " + event.toString());
         if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             val packageName = event.packageName?.toString()
+            if(packageName==="com.social.media.decondition")    return
             Log.d("AppLaunchService", "Detected app launch: $packageName")
             if (packageName != null && selectedApps.contains(packageName)) {
-                Log.d("AppLaunchService", "Redirecting to MainActivity")
-                val intent = Intent(this, MainActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                val puzzleSolved = sharedPreferences.getBoolean("PUZZLE_SOLVED_$packageName", false)
+                val sessionActive = sharedPreferences.getBoolean("SESSION_ACTIVE_$packageName", false)
+                if (!puzzleSolved || !sessionActive) {
+                    Log.d("AppLaunchService", "Redirecting to SudokuPuzzleActivity")
+                    val intent = Intent(this, SudokuPuzzleActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        putExtra("APP_PACKAGE_NAME", packageName)
+                    }
+                    startActivity(intent)
                 }
-                startActivity(intent)
             }
         }
     }
 
     override fun onInterrupt() {
-        // Handle service interruption
+        Log.d("AppLaunchService", "Service interrupted")
     }
 }
