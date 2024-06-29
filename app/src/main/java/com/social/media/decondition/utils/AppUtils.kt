@@ -44,7 +44,7 @@ object AppUtils {
         return apps
     }
 
-    fun getNonSelectedApps(context: Context, selectedApps: Set<String>): List<AppDetail> {
+    fun getNonSelectedApps(context: Context, selectedApps: Set<String>): MutableList<AppDetail> {
         val apps = getInstalledApps(context).toMutableList()
         apps.removeAll { selectedApps.contains(it.packageName) || context.packageName.equals(it.packageName) }
         return apps

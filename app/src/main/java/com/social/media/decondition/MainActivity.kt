@@ -100,7 +100,7 @@ class MainActivity : AppCompatActivity() {
             searchView.requestFocus()
             searchView.setIconified(false)
             KeyboardUtils.showKeyboard(this, searchView)
-            nonSelectedAppsList = AppUtils.getNonSelectedApps(this, selectedAppPackageNamesList).toMutableList()
+            nonSelectedAppsList = AppUtils.getNonSelectedApps(this, selectedAppPackageNamesList)
             appsAdapter.filterList(nonSelectedAppsList)
         }
     }

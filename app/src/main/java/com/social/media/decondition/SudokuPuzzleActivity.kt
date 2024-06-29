@@ -15,7 +15,7 @@ class SudokuPuzzleActivity : AppCompatActivity() {
     private lateinit var dbHelper: SudokuDatabaseHelper
     private lateinit var solution: String
     private lateinit var editTexts: Array<EditText?>
-    private var appPackageName: String? = null
+    private var triggeringAppPackageName: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,7 +31,7 @@ class SudokuPuzzleActivity : AppCompatActivity() {
             // displaySudokuPuzzle(it.puzzle)
         }
 
-        appPackageName = intent.getStringExtra("APP_PACKAGE_NAME")
+        triggeringAppPackageName = intent.getStringExtra("APP_PACKAGE_NAME")
     }
 
     private fun displaySudokuPuzzle(puzzle: String) {
@@ -87,7 +87,6 @@ class SudokuPuzzleActivity : AppCompatActivity() {
                 break
             }
         }
-
         if (correct) {
             Toast.makeText(this, "Congratulations! The puzzle is solved correctly.", Toast.LENGTH_LONG).show()
             setPuzzleSolvedFlag()
@@ -101,14 +100,14 @@ class SudokuPuzzleActivity : AppCompatActivity() {
     private fun setPuzzleSolvedFlag() {
         val sharedPreferences = getSharedPreferences("AppSelections", MODE_PRIVATE)
         val editor = sharedPreferences.edit()
-        editor.putBoolean("PUZZLE_SOLVED_$appPackageName", true)
-        editor.putBoolean("SESSION_ACTIVE_$appPackageName", true)
+        editor.putBoolean("PUZZLE_SOLVED_$triggeringAppPackageName", true)
+        editor.putBoolean("SESSION_ACTIVE_$triggeringAppPackageName", true)
         editor.apply()
-        println("Setting as solved for "+appPackageName)
+        println("Setting as solved for "+triggeringAppPackageName)
     }
 
     private fun launchOriginalApp() {
-        appPackageName?.let {
+        triggeringAppPackageName?.let {
             val launchIntent = packageManager.getLaunchIntentForPackage(it)
             if (launchIntent != null) {
                 setPuzzleSolvedFlag()
@@ -126,7 +125,7 @@ class SudokuPuzzleActivity : AppCompatActivity() {
     private fun resetSessionFlag() {
         val sharedPreferences = getSharedPreferences("AppSelections", MODE_PRIVATE)
         val editor = sharedPreferences.edit()
-        editor.putBoolean("SESSION_ACTIVE_$appPackageName", false)
+        editor.putBoolean("SESSION_ACTIVE_$triggeringAppPackageName", false)
         println("resetting session flag")
         editor.apply()
     }
