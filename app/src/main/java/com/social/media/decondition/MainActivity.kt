@@ -21,10 +21,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var searchView: SearchView
     private lateinit var plusButton: Button
     private lateinit var appsAdapter: AppsAdapter
-    private var appsList: MutableList<AppDetail> = mutableListOf()
-    private var selectedAppsList: MutableList<AppDetail> = mutableListOf()
+    private val selectedAppPackageNamesList = mutableSetOf<String>()
+    private var selectedAppDetailsList: MutableList<AppDetail> = mutableListOf()
     private var nonSelectedAppsList: MutableList<AppDetail> = mutableListOf()
-    private val selectedApps = mutableSetOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,35 +33,19 @@ class MainActivity : AppCompatActivity() {
         searchView = findViewById(R.id.searchView)
         appsRecyclerView = findViewById(R.id.appsRecyclerView)
 
-        selectedApps.addAll(SharedPreferencesUtils.getSelectedApps(this))
-
+        selectedAppPackageNamesList.addAll(SharedPreferencesUtils.getSelectedApps(this))
         // Reset session flags for all selected apps
         resetSessionFlags()
-
-        selectedAppsList = AppUtils.getSelectedApps(this, selectedApps).toMutableList()
-        appsAdapter = AppsAdapter(selectedAppsList, ::onAppSelected)
+        selectedAppDetailsList = AppUtils.getSelectedAppDetailsList(this, selectedAppPackageNamesList)
+        appsAdapter = AppsAdapter(selectedAppDetailsList, ::onAppSelected)
         appsRecyclerView.layoutManager = LinearLayoutManager(this)
         appsRecyclerView.adapter = appsAdapter
 
         searchView.visibility = View.GONE
         appsRecyclerView.visibility = View.VISIBLE
-        appsAdapter.filterList(selectedAppsList)
+        appsAdapter.filterList(selectedAppDetailsList)
 
-        plusButton.setOnClickListener {
-            if (searchView.visibility == View.VISIBLE) {
-                searchView.visibility = View.GONE
-                appsAdapter.filterList(selectedAppsList)
-                KeyboardUtils.hideKeyboard(this, searchView)
-            } else {
-                searchView.visibility = View.VISIBLE
-                appsRecyclerView.visibility = View.VISIBLE
-                searchView.requestFocus()
-                searchView.setIconified(false)
-                KeyboardUtils.showKeyboard(this, searchView)
-                nonSelectedAppsList = AppUtils.getNonSelectedApps(this, selectedApps).toMutableList()
-                appsAdapter.filterList(nonSelectedAppsList)
-            }
-        }
+        plusButton.setOnClickListener { toggleView() }
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
@@ -98,7 +81,7 @@ class MainActivity : AppCompatActivity() {
     override fun onBackPressed() {
         if (searchView.visibility == View.VISIBLE) {
             searchView.visibility = View.GONE
-            appsAdapter.filterList(selectedAppsList)
+            appsAdapter.filterList(selectedAppDetailsList)
             KeyboardUtils.hideKeyboard(this, searchView)
         } else {
             super.onBackPressed()
@@ -106,19 +89,35 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onAppSelected(app: AppDetail) {
-        selectedApps.add(app.packageName)
-        SharedPreferencesUtils.saveSelectedApps(this, selectedApps)
+        selectedAppPackageNamesList.add(app.packageName)
+        SharedPreferencesUtils.saveSelectedApps(this, selectedAppPackageNamesList)
         nonSelectedAppsList.remove(app)
-        selectedAppsList.add(app)
+        selectedAppDetailsList.add(app)
         appsAdapter.notifyDataSetChanged()
     }
 
     private fun resetSessionFlags() {
         val sharedPreferences = getSharedPreferences("AppSelections", MODE_PRIVATE)
         val editor = sharedPreferences.edit()
-        for (packageName in selectedApps) {
+        for (packageName in selectedAppPackageNamesList) {
             editor.putBoolean("SESSION_ACTIVE_$packageName", false)
         }
         editor.apply()
+    }
+
+    private fun toggleView() {
+        if (searchView.visibility == View.VISIBLE) {
+            searchView.visibility = View.GONE
+            appsAdapter.filterList(selectedAppDetailsList)
+            KeyboardUtils.hideKeyboard(this, searchView)
+        } else {
+            searchView.visibility = View.VISIBLE
+            appsRecyclerView.visibility = View.VISIBLE
+            searchView.requestFocus()
+            searchView.setIconified(false)
+            KeyboardUtils.showKeyboard(this, searchView)
+            nonSelectedAppsList = AppUtils.getNonSelectedApps(this, selectedAppPackageNamesList).toMutableList()
+            appsAdapter.filterList(nonSelectedAppsList)
+        }
     }
 }

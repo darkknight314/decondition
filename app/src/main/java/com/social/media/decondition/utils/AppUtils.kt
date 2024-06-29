@@ -26,7 +26,7 @@ object AppUtils {
         return apps
     }
 
-    fun getSelectedApps(context: Context, selectedApps: Set<String>): List<AppDetail> {
+    fun getSelectedAppDetailsList(context: Context, selectedApps: Set<String>): MutableList<AppDetail> {
         val pm = context.packageManager
         val apps = mutableListOf<AppDetail>()
 
