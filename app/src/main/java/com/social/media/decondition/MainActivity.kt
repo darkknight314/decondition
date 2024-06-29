@@ -1,12 +1,9 @@
 package com.social.media.decondition
 
-import android.content.Intent
 import android.os.Bundle
-import android.provider.Settings
 import android.view.View
 import android.widget.Button
 import android.widget.SearchView
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -61,22 +58,9 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        showAccessibilityServiceDialog()
+        AccessibilityServiceUtils.showAccessibilityServiceDialog(this)
     }
 
-    private fun showAccessibilityServiceDialog() {
-        if (!AccessibilityServiceUtils.isAccessibilityServiceEnabled(this, AppLaunchAccessibilityService::class.java)) {
-            AlertDialog.Builder(this)
-                .setTitle("Enable Accessibility Service")
-                .setMessage("Please enable the accessibility service to allow this app to monitor app launches.")
-                .setPositiveButton("Go to Settings") { _, _ ->
-                    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                    startActivity(intent)
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
-        }
-    }
 
     override fun onBackPressed() {
         if (searchView.visibility == View.VISIBLE) {
