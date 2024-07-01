@@ -1,14 +1,20 @@
 package com.social.media.decondition
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import android.widget.GridLayout
-import android.widget.EditText
-import android.view.ViewGroup.LayoutParams
 import android.text.Editable
+import android.text.InputFilter
+import android.text.SpannableStringBuilder
 import android.text.TextWatcher
+import android.widget.EditText
+import android.widget.TableLayout
+import android.widget.TableRow
 import android.widget.Toast
-import kotlinx.coroutines.*
+import androidx.appcompat.app.AppCompatActivity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
 
 class SudokuPuzzleActivity : AppCompatActivity() {
 
@@ -35,36 +41,82 @@ class SudokuPuzzleActivity : AppCompatActivity() {
     }
 
     private fun displaySudokuPuzzle(puzzle: String) {
-        val gridLayout = findViewById<GridLayout>(R.id.sudoku_grid)
-        gridLayout.columnCount = 9
-        gridLayout.rowCount = 9
+        val tableLayout = findViewById<TableLayout>(R.id.sudoku_table)
 
         editTexts = arrayOfNulls(81)
-        for (i in 0 until 81) {
-            val textView = EditText(this)
-            textView.setTextSize(18f)
-            textView.layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
-            textView.isFocusable = puzzle[i] == '0'
-            textView.isFocusableInTouchMode = puzzle[i] == '0'
-            if (puzzle[i] != '0') {
-                textView.setText(puzzle[i].toString())
-                textView.isEnabled = false
-            } else {
-                textView.setText("")
-                textView.addTextChangedListener(object : TextWatcher {
-                    override fun afterTextChanged(s: Editable?) {
-                        if (isPuzzleComplete()) {
-                            checkSolution()
+        for (i in 0 until 9) {
+            val row = TableRow(this)
+            row.layoutParams = TableLayout.LayoutParams(
+                TableLayout.LayoutParams.MATCH_PARENT,
+                TableLayout.LayoutParams.WRAP_CONTENT
+            )
+
+            for (j in 0 until 9) {
+                val index = i * 9 + j
+                val editText = EditText(this)
+                editText.filters = arrayOf(InputFilter { source, start, end, dest, dstart, dend ->
+                    if (source is SpannableStringBuilder) {
+                        val sourceAsSpannableBuilder = source as SpannableStringBuilder
+                        for (i in end - 1 downTo start) {
+                            val currentChar = source[i]
+                            if (!Character.isDigit(currentChar)) {
+                                sourceAsSpannableBuilder.delete(i, i + 1)
+                            }
                         }
+                        source
+                    } else {
+                        val filteredStringBuilder = StringBuilder()
+                        for (i in start until end) {
+                            val currentChar = source[i]
+                            if (start+1==end && Character.isDigit(currentChar)) {
+                                filteredStringBuilder.append(currentChar)
+                            }
+                        }
+                        filteredStringBuilder.toString()
                     }
+                }, InputFilter.LengthFilter(1))
+                editText.layoutParams = TableRow.LayoutParams(
+                    TableRow.LayoutParams.WRAP_CONTENT,
+                    TableRow.LayoutParams.WRAP_CONTENT
+                )
+                editText.setTextSize(18f)
+                editText.gravity = android.view.Gravity.CENTER
+                editText.isFocusable = puzzle[index] == '0'
+                editText.isFocusableInTouchMode = puzzle[index] == '0'
+                if (puzzle[index] != '0') {
+                    editText.setText(puzzle[index].toString())
+                    editText.isEnabled = false
+                } else {
+                    editText.setText("")
+                    editText.addTextChangedListener(object : TextWatcher {
+                        override fun afterTextChanged(s: Editable?) {
+                            if (isPuzzleComplete()) {
+                                checkSolution()
+                            }
+                        }
 
-                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                        override fun beforeTextChanged(
+                            s: CharSequence?,
+                            start: Int,
+                            count: Int,
+                            after: Int
+                        ) {
+                        }
 
-                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-                })
+                        override fun onTextChanged(
+                            s: CharSequence?,
+                            start: Int,
+                            before: Int,
+                            count: Int
+                        ) {
+                        }
+                    })
+                }
+                editTexts[index] = editText
+                row.addView(editText)
             }
-            editTexts[i] = textView
-            gridLayout.addView(textView)
+
+            tableLayout.addView(row)
         }
     }
 
@@ -88,12 +140,20 @@ class SudokuPuzzleActivity : AppCompatActivity() {
             }
         }
         if (correct) {
-            Toast.makeText(this, "Congratulations! The puzzle is solved correctly.", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                this,
+                "Congratulations! The puzzle is solved correctly.",
+                Toast.LENGTH_LONG
+            ).show()
             setPuzzleSolvedFlag()
             launchOriginalApp()
             finish()
         } else {
-            Toast.makeText(this, "The solution is incorrect. Please try again.", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                this,
+                "The solution is incorrect. Please try again.",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -103,7 +163,7 @@ class SudokuPuzzleActivity : AppCompatActivity() {
         editor.putBoolean("PUZZLE_SOLVED_$triggeringAppPackageName", true)
         editor.putBoolean("SESSION_ACTIVE_$triggeringAppPackageName", true)
         editor.apply()
-        println("Setting as solved for "+triggeringAppPackageName)
+        println("Setting as solved for " + triggeringAppPackageName)
     }
 
     private fun launchOriginalApp() {
