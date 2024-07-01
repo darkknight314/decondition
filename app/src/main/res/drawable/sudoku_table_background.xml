@@ -1,0 +1,8 @@
+<!-- res/drawable/table_background.xml -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+       android:shape="rectangle">
+    <solid android:color="@android:color/transparent" /> <!-- Background color of the table layout -->
+    <stroke
+            android:width="2dp"
+    android:color="@android:color/black" /> <!-- Border color -->
+</shape>
