@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical">
 
-    <GridLayout
-        android:id="@+id/sudoku_grid"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_centerInParent="true"
-        android:columnCount="9"
-        android:rowCount="9"
-        android:padding="16dp" />
+    <TableLayout
+            android:id="@+id/sudoku_table"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:stretchColumns="*"
+            android:padding="5dp"
+            android:background="@drawable/sudoku_table_background">
+    </TableLayout>
 
-</RelativeLayout>
+</LinearLayout>
