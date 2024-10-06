@@ -40,7 +40,7 @@ class AppsAdapter(
         val context = view.context
         AlertDialog.Builder(context)
             .setTitle("Confirm Selection")
-            .setMessage("Do you want to select ${app.appName}?")
+            .setMessage("Do you want to remove ${app.appName}?")
             .setPositiveButton("Yes") { _, _ ->
                 onAppSelected(app)
                 appsList.removeAt(position)

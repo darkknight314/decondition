@@ -1,5 +1,9 @@
 package com.social.media.decondition
 
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.InsetDrawable
+import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
 import android.text.Editable
 import android.text.InputFilter
@@ -10,6 +14,7 @@ import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.social.media.decondition.ui.theme.SudokuCellDrawable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -31,10 +36,10 @@ class SudokuPuzzleActivity : AppCompatActivity() {
 
         val randomPuzzle = dbHelper.getRandomSudokuPuzzle()
         randomPuzzle?.let {
-            solution = it.solution
-            var puzzle = solution.substring(0, 10) + '0' + solution.substring(10 + 1)
-            displaySudokuPuzzle(puzzle)
-            // displaySudokuPuzzle(it.puzzle)
+//            solution = it.solution
+//            var puzzle = solution.substring(0, 10) + '0' + solution.substring(10 + 1)
+//            displaySudokuPuzzle(puzzle)
+             displaySudokuPuzzle(it.puzzle)
         }
 
         triggeringAppPackageName = intent.getStringExtra("APP_PACKAGE_NAME")
@@ -42,6 +47,7 @@ class SudokuPuzzleActivity : AppCompatActivity() {
 
     private fun displaySudokuPuzzle(puzzle: String) {
         val tableLayout = findViewById<TableLayout>(R.id.sudoku_table)
+        val BORDER_WIDTH = 3
 
         editTexts = arrayOfNulls(81)
         for (i in 0 until 9) {
@@ -54,27 +60,23 @@ class SudokuPuzzleActivity : AppCompatActivity() {
             for (j in 0 until 9) {
                 val index = i * 9 + j
                 val editText = EditText(this)
-                editText.filters = arrayOf(InputFilter { source, start, end, dest, dstart, dend ->
-                    if (source is SpannableStringBuilder) {
-                        val sourceAsSpannableBuilder = source as SpannableStringBuilder
-                        for (i in end - 1 downTo start) {
-                            val currentChar = source[i]
-                            if (!Character.isDigit(currentChar)) {
-                                sourceAsSpannableBuilder.delete(i, i + 1)
-                            }
-                        }
-                        source
-                    } else {
-                        val filteredStringBuilder = StringBuilder()
-                        for (i in start until end) {
-                            val currentChar = source[i]
-                            if (start+1==end && Character.isDigit(currentChar)) {
-                                filteredStringBuilder.append(currentChar)
-                            }
-                        }
-                        filteredStringBuilder.toString()
-                    }
-                }, InputFilter.LengthFilter(1))
+
+                val cellDrawable = SudokuCellDrawable(
+                    Color.WHITE,
+                    Color.BLACK,
+                    i,
+                    j,
+                    BORDER_WIDTH
+                )
+
+                editText.background = cellDrawable
+
+                editText.filters = arrayOf(
+                    InputFilter { source, _, _, _, _, _ ->
+                        source.filter { it.isDigit() }
+                    },
+                    InputFilter.LengthFilter(1)
+                )
                 editText.layoutParams = TableRow.LayoutParams(
                     TableRow.LayoutParams.WRAP_CONTENT,
                     TableRow.LayoutParams.WRAP_CONTENT
@@ -100,22 +102,19 @@ class SudokuPuzzleActivity : AppCompatActivity() {
                             start: Int,
                             count: Int,
                             after: Int
-                        ) {
-                        }
+                        ) {}
 
                         override fun onTextChanged(
                             s: CharSequence?,
                             start: Int,
                             before: Int,
                             count: Int
-                        ) {
-                        }
+                        ) {}
                     })
                 }
                 editTexts[index] = editText
                 row.addView(editText)
             }
-
             tableLayout.addView(row)
         }
     }
