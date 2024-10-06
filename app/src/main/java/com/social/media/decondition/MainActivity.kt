@@ -15,43 +15,42 @@ import com.social.media.decondition.utils.SharedPreferencesUtils
 
 class MainActivity : AppCompatActivity() {
     private lateinit var appsRecyclerView: RecyclerView
-    private lateinit var searchView: SearchView
+    private lateinit var searchBarView: SearchView
     private lateinit var plusButton: Button
     private lateinit var appsAdapter: AppsAdapter
-    private val selectedAppPackageNamesList = mutableSetOf<String>()
-    private var selectedAppDetailsList: MutableList<AppDetail> = mutableListOf()
-    private var nonSelectedAppsList: MutableList<AppDetail> = mutableListOf()
+    private val blacklistedAppPackageNamesList = mutableSetOf<String>()
+    private var blacklistedAppDetailsList: MutableList<AppDetail> = mutableListOf()
+    private var whitelistedAppsList: MutableList<AppDetail> = mutableListOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         plusButton = findViewById(R.id.plusButton)
-        searchView = findViewById(R.id.searchView)
+        searchBarView = findViewById(R.id.searchView)
         appsRecyclerView = findViewById(R.id.appsRecyclerView)
 
-        selectedAppPackageNamesList.addAll(SharedPreferencesUtils.getSelectedApps(this))
-        // Reset session flags for all selected apps
+        blacklistedAppPackageNamesList.addAll(SharedPreferencesUtils.getBlacklistedApps(this))
         resetSessionFlags()
-        selectedAppDetailsList = AppUtils.getSelectedAppDetailsList(this, selectedAppPackageNamesList)
-        appsAdapter = AppsAdapter(selectedAppDetailsList, ::onAppSelected)
+        blacklistedAppDetailsList = AppUtils.getSelectedAppDetailsList(this, blacklistedAppPackageNamesList)
+        appsAdapter = AppsAdapter(blacklistedAppDetailsList, ::onAppSelected)
         appsRecyclerView.layoutManager = LinearLayoutManager(this)
         appsRecyclerView.adapter = appsAdapter
 
-        searchView.visibility = View.GONE
+        searchBarView.visibility = View.GONE
         appsRecyclerView.visibility = View.VISIBLE
-        appsAdapter.filterList(selectedAppDetailsList)
+        appsAdapter.filterList(blacklistedAppDetailsList)
 
         plusButton.setOnClickListener { toggleView() }
 
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+        searchBarView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 return true
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
                 newText?.let {
-                    val filteredList = nonSelectedAppsList.filter { it.appName.contains(newText, ignoreCase = true) }
+                    val filteredList = whitelistedAppsList.filter { it.appName.contains(newText, ignoreCase = true) }
                     appsAdapter.filterList(filteredList)
                 }
                 return true
@@ -63,45 +62,45 @@ class MainActivity : AppCompatActivity() {
 
 
     override fun onBackPressed() {
-        if (searchView.visibility == View.VISIBLE) {
-            searchView.visibility = View.GONE
-            appsAdapter.filterList(selectedAppDetailsList)
-            KeyboardUtils.hideKeyboard(this, searchView)
+        if (searchBarView.visibility == View.VISIBLE) {
+            searchBarView.visibility = View.GONE
+            appsAdapter.filterList(blacklistedAppDetailsList)
+            KeyboardUtils.hideKeyboard(this, searchBarView)
         } else {
             super.onBackPressed()
         }
     }
 
     private fun onAppSelected(app: AppDetail) {
-        selectedAppPackageNamesList.add(app.packageName)
-        SharedPreferencesUtils.saveSelectedApps(this, selectedAppPackageNamesList)
-        nonSelectedAppsList.remove(app)
-        selectedAppDetailsList.add(app)
+        blacklistedAppPackageNamesList.add(app.packageName)
+        SharedPreferencesUtils.saveSelectedApps(this, blacklistedAppPackageNamesList)
+        whitelistedAppsList.remove(app)
+        blacklistedAppDetailsList.add(app)
         appsAdapter.notifyDataSetChanged()
     }
 
     private fun resetSessionFlags() {
         val sharedPreferences = getSharedPreferences("AppSelections", MODE_PRIVATE)
         val editor = sharedPreferences.edit()
-        for (packageName in selectedAppPackageNamesList) {
+        for (packageName in blacklistedAppPackageNamesList) {
             editor.putBoolean("SESSION_ACTIVE_$packageName", false)
         }
         editor.apply()
     }
 
     private fun toggleView() {
-        if (searchView.visibility == View.VISIBLE) {
-            searchView.visibility = View.GONE
-            appsAdapter.filterList(selectedAppDetailsList)
-            KeyboardUtils.hideKeyboard(this, searchView)
+        if (searchBarView.visibility == View.VISIBLE) {
+            searchBarView.visibility = View.GONE
+            appsAdapter.filterList(blacklistedAppDetailsList)
+            KeyboardUtils.hideKeyboard(this, searchBarView)
         } else {
-            searchView.visibility = View.VISIBLE
+            searchBarView.visibility = View.VISIBLE
             appsRecyclerView.visibility = View.VISIBLE
-            searchView.requestFocus()
-            searchView.setIconified(false)
-            KeyboardUtils.showKeyboard(this, searchView)
-            nonSelectedAppsList = AppUtils.getNonSelectedApps(this, selectedAppPackageNamesList)
-            appsAdapter.filterList(nonSelectedAppsList)
+            searchBarView.requestFocus()
+            searchBarView.setIconified(false)
+            KeyboardUtils.showKeyboard(this, searchBarView)
+            whitelistedAppsList = AppUtils.getNonSelectedApps(this, blacklistedAppPackageNamesList)
+            appsAdapter.filterList(whitelistedAppsList)
         }
     }
 }
