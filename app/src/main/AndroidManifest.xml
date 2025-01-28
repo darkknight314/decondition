@@ -4,6 +4,8 @@
 
     <!-- Permissions for SYSTEM_ALERT_WINDOW if needed -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <!-- Queries to specify which apps this app can interact with -->
     <queries>
@@ -37,12 +39,15 @@
         </activity>
         <activity
                 android:name=".SudokuPuzzleActivity"
+                android:launchMode="singleInstance"
+                android:excludeFromRecents="true"
+                android:taskAffinity=""
                 android:exported="true">
         </activity>
 
         <service
-                android:name=".AppLaunchAccessibilityService"
-                android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+                android:name=".AppUsageMonitoringService"
+                android:permission="android.permission.PACKAGE_USAGE_STATS"
                 android:exported="true">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />

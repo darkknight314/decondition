@@ -10,81 +10,72 @@ class SudokuCellDrawable(
     private val backgroundColor: Int,
     private val borderColor: Int,
     private val row: Int,
-    private val col: Int,
-    private val borderWidth: Int
+    private val col: Int
 ) : Drawable() {
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
+    private val thinLineWidth = 1f   // normal grid lines
+    private val thickLineWidth = 5f  // every 3rd line
+
     override fun draw(canvas: Canvas) {
         val rect = bounds
 
-        // Draw background
+        // 1) Fill background
         paint.color = backgroundColor
         paint.style = Paint.Style.FILL
         canvas.drawRect(rect, paint)
 
-        // Determine border widths
-        val lineBorderWidth = borderWidth / 2
-        val thinBorderWidth = borderWidth
-        val thickBorderWidth = borderWidth * 2
-
-        val isTopBorderBoxBoundary = row % 3 == 0 && row != 0
-        val isBottomBorderBoxBoundary = row % 3 == 2 && row != 8
-        val isLeftBorderBoxBoundary = col % 3 == 0 && col != 0
-        val isRightBorderBoxBoundary = col % 3 == 2 && col != 8
-
-        val isTopBorderSudokuBoundary = row == 0
-        val isBottomBorderSudokuBoundary = row == 8
-        val isLeftBorderSudokuBoundary = col == 0
-        val isRightBorderSudokuBoundary = col == 8
-
-        var topBorderWidth = lineBorderWidth
-        var bottomBorderWidth = lineBorderWidth
-        var leftBorderWidth = lineBorderWidth
-        var rightBorderWidth = lineBorderWidth
-
-        if (isTopBorderBoxBoundary) topBorderWidth = thinBorderWidth
-        if (isTopBorderSudokuBoundary) topBorderWidth = thickBorderWidth
-
-        if (isBottomBorderBoxBoundary) bottomBorderWidth = thinBorderWidth
-        if (isBottomBorderSudokuBoundary) bottomBorderWidth = thickBorderWidth
-
-        if (isLeftBorderBoxBoundary) leftBorderWidth = thinBorderWidth
-        if (isLeftBorderSudokuBoundary) leftBorderWidth = thickBorderWidth
-
-        if (isRightBorderBoxBoundary) rightBorderWidth = thinBorderWidth
-        if (isRightBorderSudokuBoundary) rightBorderWidth = thickBorderWidth
-
+        // 2) Setup border paint
         paint.color = borderColor
         paint.style = Paint.Style.STROKE
 
-        // Draw borders using calculated widths
+        // We'll default all lines to 'thinLineWidth'
+        var topWidth    = thinLineWidth
+        var bottomWidth = thinLineWidth
+        var leftWidth   = thinLineWidth
+        var rightWidth  = thinLineWidth
+
+        // 3) Handle top boundary for the very first row (bold)
+        if (row == 0) {
+            topWidth = thickLineWidth
+        }
+        // 4) Handle left boundary for the very first column (bold)
+        if (col == 0) {
+            leftWidth = thickLineWidth
+        }
+        // 5) For typical Sudoku, the “thick lines” appear *below* each 3rd row:
+        //    That means at row == 2, row == 5, and row == 8.
+        if (row == 2 || row == 5 || row == 8) {
+            bottomWidth = thickLineWidth
+        }
+        // 6) Similarly, columns 2, 5, and 8 get a thick right boundary.
+        if (col == 2 || col == 5 || col == 8) {
+            rightWidth = thickLineWidth
+        }
+
         // Top border
-        if (topBorderWidth > 0) {
-            paint.strokeWidth = topBorderWidth.toFloat()
-            val y = rect.top + topBorderWidth / 2f
+        if (topWidth > 0) {
+            paint.strokeWidth = topWidth
+            val y = rect.top + (topWidth / 2f)
             canvas.drawLine(rect.left.toFloat(), y, rect.right.toFloat(), y, paint)
         }
-
         // Bottom border
-        if (bottomBorderWidth > 0) {
-            paint.strokeWidth = bottomBorderWidth.toFloat()
-            val y = rect.bottom - bottomBorderWidth / 2f
+        if (bottomWidth > 0) {
+            paint.strokeWidth = bottomWidth
+            val y = rect.bottom - (bottomWidth / 2f)
             canvas.drawLine(rect.left.toFloat(), y, rect.right.toFloat(), y, paint)
         }
-
         // Left border
-        if (leftBorderWidth > 0) {
-            paint.strokeWidth = leftBorderWidth.toFloat()
-            val x = rect.left + leftBorderWidth / 2f
+        if (leftWidth > 0) {
+            paint.strokeWidth = leftWidth
+            val x = rect.left + (leftWidth / 2f)
             canvas.drawLine(x, rect.top.toFloat(), x, rect.bottom.toFloat(), paint)
         }
-
         // Right border
-        if (rightBorderWidth > 0) {
-            paint.strokeWidth = rightBorderWidth.toFloat()
-            val x = rect.right - rightBorderWidth / 2f
+        if (rightWidth > 0) {
+            paint.strokeWidth = rightWidth
+            val x = rect.right - (rightWidth / 2f)
             canvas.drawLine(x, rect.top.toFloat(), x, rect.bottom.toFloat(), paint)
         }
     }

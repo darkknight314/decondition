@@ -5,7 +5,7 @@ import android.content.Context
 object SharedPreferencesUtils {
     private const val PREFS_NAME = "AppSelections"
 
-    fun getSelectedApps(context: Context): MutableSet<String> {
+    fun getBlacklistedApps(context: Context): MutableSet<String> {
         val sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return sharedPreferences.getStringSet("selectedApps", emptySet())?.toMutableSet() ?: mutableSetOf()
     }
