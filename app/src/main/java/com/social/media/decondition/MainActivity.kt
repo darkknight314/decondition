@@ -1,10 +1,14 @@
 package com.social.media.decondition
 
+import android.accessibilityservice.AccessibilityService
+import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.view.View
 import android.widget.Button
 import android.widget.SearchView
@@ -83,8 +87,8 @@ class MainActivity : AppCompatActivity() {
         // Request necessary permissions
         RequestPermissionUtils.checkAndRequestAllPermissions(this)
 
-        // Guide user to enable accessibility service
-        promptEnableAccessibilityService()
+        // Request accessibility permission through a dialog instead of direct redirection
+        checkAndRequestAccessibilityPermission()
     }
 
     override fun onBackPressed() {
@@ -152,7 +156,6 @@ class MainActivity : AppCompatActivity() {
      */
     private fun toggleView() {
         if (isViewingBlacklist) {
-            // Switch to whitelisted view
             isViewingBlacklist = false
             searchBarView.visibility = View.VISIBLE
             plusButton.text = "Done"
@@ -161,37 +164,27 @@ class MainActivity : AppCompatActivity() {
             whitelistedAppsList = AppUtils.getNonSelectedApps(this, blacklistedAppPackageNamesList)
             appsAdapter.updateList(whitelistedAppsList)
 
-            // Update adapter's view state
             appsAdapter.setViewState(isViewingBlacklist)
-
             appsRecyclerView.scrollToPosition(0)
 
-            // Show keyboard for search
             searchBarView.requestFocus()
             searchBarView.isIconified = false
             Handler(Looper.getMainLooper()).postDelayed({
                 KeyboardUtils.showKeyboard(this, searchBarView)
             }, 200)
         } else {
-            // Switch back to blacklisted view
             isViewingBlacklist = true
             searchBarView.visibility = View.GONE
             plusButton.text = "Add"
 
-            // Show blacklisted apps
             appsAdapter.updateList(blacklistedAppDetailsList)
-
-            // Update adapter's view state
             appsAdapter.setViewState(isViewingBlacklist)
-
             appsRecyclerView.scrollToPosition(0)
 
-            // Hide keyboard
             Handler(Looper.getMainLooper()).postDelayed({
                 KeyboardUtils.hideKeyboard(this, searchBarView)
             }, 200)
 
-            // Clear search query
             searchBarView.setQuery("", false)
         }
     }
@@ -204,18 +197,29 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Guides the user to enable the accessibility service manually.
+     * Checks and requests accessibility permission using a dialog.
      */
-    private fun promptEnableAccessibilityService() {
-        Toast.makeText(
-            this,
-            "Enable the Accessibility Service in Settings for full functionality.",
-            Toast.LENGTH_LONG
-        ).show()
+    private fun checkAndRequestAccessibilityPermission() {
+        if (!isAccessibilityServiceEnabled(this, AppLaunchAccessibilityService::class.java)) {
+            AlertDialog.Builder(this)
+                .setTitle("Enable Accessibility Service")
+                .setMessage("To enable app blocking, please allow accessibility service for this app.")
+                .setPositiveButton("Go to Settings") { _, _ ->
+                    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                    startActivity(intent)
+                }
+                .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
+                .show()
+        }
+    }
 
-        // Open Accessibility Settings
-        val intent = Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
-        startActivity(intent)
+    /**
+     * Checks if the accessibility service is enabled.
+     */
+    private fun isAccessibilityServiceEnabled(context: Context, serviceClass: Class<out AccessibilityService>): Boolean {
+        val enabledServices = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+        val colonSplitter = enabledServices?.split(":") ?: return false
+        return colonSplitter.any { it.contains(serviceClass.name) }
     }
 
     /**
@@ -225,7 +229,6 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (grantResults.any { it == PackageManager.PERMISSION_DENIED }) {
             Toast.makeText(this, "Permissions are required for proper functionality", Toast.LENGTH_LONG).show()
-            // Optionally, redirect them to settings
         }
     }
 }
