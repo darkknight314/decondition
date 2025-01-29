@@ -2,6 +2,7 @@ package com.social.media.decondition
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.content.ComponentName
 import android.content.Intent
 import android.content.SharedPreferences
 import android.util.Log
@@ -48,12 +49,22 @@ class AppLaunchAccessibilityService : AccessibilityService() {
                 val puzzleSolved = sharedPreferences.getBoolean("PUZZLE_SOLVED_$packageName", false)
                 val sessionActive = sharedPreferences.getBoolean("SESSION_ACTIVE_$packageName", false)
                 if (!puzzleSolved || !sessionActive) {
-                    Log.d("AppLaunchService", "Redirecting to SudokuPuzzleActivity")
-                    val intent = Intent(this, SudokuPuzzleActivity::class.java).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        putExtra("APP_PACKAGE_NAME", packageName)
+                    val activityClassName = sharedPreferences.getString(
+                        "GLOBAL_ACTIVITY",
+                        "com.social.media.decondition.SudokuPuzzleActivity" // Default Activity
+                    )
+
+                    try {
+                        val appName = packageManager.getApplicationLabel(packageManager.getApplicationInfo(packageName, 0)).toString()
+                        val activityClass = Class.forName(activityClassName)
+                        val intent = Intent(this, activityClass).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            putExtra("APP_PACKAGE_NAME", appName)
+                        }
+                        startActivity(intent)
+                    } catch (e: ClassNotFoundException) {
+                        Log.e("AppLaunchService", "Activity class not found: $activityClassName", e)
                     }
-                    startActivity(intent)
                 }
             }
         }
