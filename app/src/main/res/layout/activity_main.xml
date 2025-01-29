@@ -28,4 +28,5 @@
             android:layout_below="@id/searchView"
             android:visibility="gone" />
 
+
 </RelativeLayout>
