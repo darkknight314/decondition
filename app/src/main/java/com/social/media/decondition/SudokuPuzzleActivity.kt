@@ -40,7 +40,7 @@ class SudokuPuzzleActivity : AppCompatActivity() {
             // displaySudokuPuzzle(it.puzzle)
 
             // Currently just displaying the puzzle:
-            displaySudokuPuzzle("0" + it.solution.substring(0, it.solution.length - 1))
+            displaySudokuPuzzle("0" + it.solution.substring(1, it.solution.length), it.solution) //TODO: REPLACE WITH it.puzzle
         }
 
 
@@ -48,7 +48,7 @@ class SudokuPuzzleActivity : AppCompatActivity() {
         triggeringAppPackageName = intent.getStringExtra("APP_PACKAGE_NAME")
     }
 
-    private fun displaySudokuPuzzle(puzzle: String) {
+    private fun displaySudokuPuzzle(puzzle: String, solution: String) {
         val tableLayout = findViewById<TableLayout>(R.id.sudoku_table)
 
         // Configure line widths for SudokuCellDrawable
@@ -105,7 +105,7 @@ class SudokuPuzzleActivity : AppCompatActivity() {
                             override fun afterTextChanged(s: Editable?) {
                                 // If you want to check solution upon full input:
                                 if (isPuzzleComplete()) {
-                                    checkSolution()
+                                    checkSolution(solution)
                                 }
                             }
                             override fun beforeTextChanged(
@@ -135,7 +135,7 @@ class SudokuPuzzleActivity : AppCompatActivity() {
         return true
     }
 
-    private fun checkSolution() {
+    private fun checkSolution(solution: String) {
         // If you have a known solution string, compare each cell’s content:
         // (Uncomment if you’re storing the solution in `solution`)
 
