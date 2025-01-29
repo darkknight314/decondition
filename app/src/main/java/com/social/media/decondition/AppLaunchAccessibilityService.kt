@@ -12,12 +12,22 @@ class AppLaunchAccessibilityService : AccessibilityService() {
     private val prefsName = "AppSelections"
     private lateinit var sharedPreferences: SharedPreferences
     private val selectedApps = mutableSetOf<String>()
+    private val preferenceChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == "selectedApps") {
+            updateSelectedApps()
+            Log.d("AppLaunchService", "Updated selected apps: $selectedApps")
+        }
+    }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         sharedPreferences = getSharedPreferences(prefsName, MODE_PRIVATE)
-        selectedApps.addAll(sharedPreferences.getStringSet("selectedApps", emptySet()) ?: emptySet())
 
+        // Load initial selected apps
+        updateSelectedApps()
+
+        // Register listener for SharedPreferences changes
+        sharedPreferences.registerOnSharedPreferenceChangeListener(preferenceChangeListener)
         val info = AccessibilityServiceInfo().apply {
             eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
@@ -51,5 +61,16 @@ class AppLaunchAccessibilityService : AccessibilityService() {
 
     override fun onInterrupt() {
         Log.d("AppLaunchService", "Service interrupted")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        sharedPreferences.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener)
+        Log.d("AppLaunchService", "SharedPreferences listener unregistered")
+    }
+
+    private fun updateSelectedApps() {
+        selectedApps.clear()
+        selectedApps.addAll(sharedPreferences.getStringSet("selectedApps", emptySet()) ?: emptySet())
     }
 }
