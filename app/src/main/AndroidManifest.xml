@@ -46,9 +46,8 @@
         </activity>
 
         <service
-                android:name=".AppUsageMonitoringService"
-                android:permission="android.permission.PACKAGE_USAGE_STATS"
-                android:exported="true">
+                android:name=".AppLaunchAccessibilityService"
+                android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" android:exported="true">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
             </intent-filter>

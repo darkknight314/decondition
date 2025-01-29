@@ -1,7 +1,10 @@
 package com.social.media.decondition
 
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.Button
 import android.widget.SearchView
@@ -17,6 +20,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var searchBarView: SearchView
     private lateinit var plusButton: Button
     private lateinit var appsAdapter: AppsAdapter
+
     private val blacklistedAppPackageNamesList = mutableSetOf<String>()
     private var blacklistedAppDetailsList: MutableList<AppDetail> = mutableListOf()
     private var whitelistedAppsList: MutableList<AppDetail> = mutableListOf()
@@ -34,14 +38,14 @@ class MainActivity : AppCompatActivity() {
         appsRecyclerView = findViewById(R.id.appsRecyclerView)
 
         // Load blacklisted apps from SharedPreferences
-        blacklistedAppPackageNamesList.addAll(SharedPreferencesUtils.getBlacklistedApps(this))
+        refreshBlacklist()
 
         resetSessionFlags()
 
         // Fetch details of blacklisted apps
         blacklistedAppDetailsList = AppUtils.getSelectedAppDetailsList(this, blacklistedAppPackageNamesList)
 
-        // Initialize adapter with blacklisted apps and set initial view state to blacklist
+        // Initialize adapter
         appsAdapter = AppsAdapter(blacklistedAppDetailsList, isViewingBlacklist) { app ->
             onAppSelected(app)
         }
@@ -60,26 +64,27 @@ class MainActivity : AppCompatActivity() {
         // Set up search functionality
         searchBarView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
-                // No action needed on submit
                 return true
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
                 if (!isViewingBlacklist) {
-                    newText?.let {
-                        val filteredList = whitelistedAppsList.filter { app ->
-                            app.appName.contains(it, ignoreCase = true)
-                        }
-                        appsAdapter.updateList(filteredList.toMutableList())
+                    val filteredList = if (!newText.isNullOrBlank()) {
+                        whitelistedAppsList.filter { app -> app.appName.contains(newText, ignoreCase = true) }
+                    } else {
+                        whitelistedAppsList
                     }
+                    appsAdapter.updateList(filteredList.toMutableList())
                 }
                 return true
             }
         })
-        RequestPermissionUtils.checkAndRequestAllPermissions(this)
-        val serviceIntent = Intent(this, AppUsageMonitoringService::class.java)
-        startService(serviceIntent)
 
+        // Request necessary permissions
+        RequestPermissionUtils.checkAndRequestAllPermissions(this)
+
+        // Guide user to enable accessibility service
+        promptEnableAccessibilityService()
     }
 
     override fun onBackPressed() {
@@ -91,10 +96,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * Refreshes the blacklist by reloading from SharedPreferences.
+     */
+    private fun refreshBlacklist() {
+        blacklistedAppPackageNamesList.clear()
+        blacklistedAppPackageNamesList.addAll(SharedPreferencesUtils.getBlacklistedApps(this))
+    }
+
+    /**
      * Handles the selection of an app from the RecyclerView.
      * Moves the app between blacklist and whitelist based on the current view.
-     *
-     * @param app The AppDetail object representing the selected app.
      */
     private fun onAppSelected(app: AppDetail) {
         if (isViewingBlacklist) {
@@ -114,7 +125,8 @@ class MainActivity : AppCompatActivity() {
         // Save updated blacklist to SharedPreferences
         SharedPreferencesUtils.saveSelectedApps(this, blacklistedAppPackageNamesList)
 
-        // Update the displayed list based on current view
+        // Refresh the list dynamically
+        refreshBlacklist()
         if (isViewingBlacklist) {
             appsAdapter.updateList(blacklistedAppDetailsList)
         } else {
@@ -143,7 +155,7 @@ class MainActivity : AppCompatActivity() {
             // Switch to whitelisted view
             isViewingBlacklist = false
             searchBarView.visibility = View.VISIBLE
-            plusButton.text = "Done" // Optionally change button text to indicate action
+            plusButton.text = "Done"
 
             // Fetch whitelisted apps
             whitelistedAppsList = AppUtils.getNonSelectedApps(this, blacklistedAppPackageNamesList)
@@ -157,12 +169,14 @@ class MainActivity : AppCompatActivity() {
             // Show keyboard for search
             searchBarView.requestFocus()
             searchBarView.isIconified = false
-            KeyboardUtils.showKeyboard(this, searchBarView)
+            Handler(Looper.getMainLooper()).postDelayed({
+                KeyboardUtils.showKeyboard(this, searchBarView)
+            }, 200)
         } else {
             // Switch back to blacklisted view
             isViewingBlacklist = true
             searchBarView.visibility = View.GONE
-            plusButton.text = "Add" // Optionally revert button text
+            plusButton.text = "Add"
 
             // Show blacklisted apps
             appsAdapter.updateList(blacklistedAppDetailsList)
@@ -173,7 +187,9 @@ class MainActivity : AppCompatActivity() {
             appsRecyclerView.scrollToPosition(0)
 
             // Hide keyboard
-            KeyboardUtils.hideKeyboard(this, searchBarView)
+            Handler(Looper.getMainLooper()).postDelayed({
+                KeyboardUtils.hideKeyboard(this, searchBarView)
+            }, 200)
 
             // Clear search query
             searchBarView.setQuery("", false)
@@ -182,10 +198,34 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * Displays a toast message to the user.
-     *
-     * @param message The message to display.
      */
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    /**
+     * Guides the user to enable the accessibility service manually.
+     */
+    private fun promptEnableAccessibilityService() {
+        Toast.makeText(
+            this,
+            "Enable the Accessibility Service in Settings for full functionality.",
+            Toast.LENGTH_LONG
+        ).show()
+
+        // Open Accessibility Settings
+        val intent = Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
+        startActivity(intent)
+    }
+
+    /**
+     * Handles permission requests properly.
+     */
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (grantResults.any { it == PackageManager.PERMISSION_DENIED }) {
+            Toast.makeText(this, "Permissions are required for proper functionality", Toast.LENGTH_LONG).show()
+            // Optionally, redirect them to settings
+        }
     }
 }
