@@ -59,7 +59,7 @@ class AppLaunchAccessibilityService : AccessibilityService() {
                         val activityClass = Class.forName(activityClassName)
                         val intent = Intent(this, activityClass).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            putExtra("APP_PACKAGE_NAME", appName)
+                            putExtra("APP_PACKAGE_NAME", packageName)
                         }
                         startActivity(intent)
                     } catch (e: ClassNotFoundException) {
