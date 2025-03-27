@@ -19,14 +19,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
-            android:visibility="gone" />
+            android:visibility="visible" />
 
     <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/appsRecyclerView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@id/searchView"
-            android:visibility="gone" />
+            android:visibility="visible" />
 
 
 </RelativeLayout>

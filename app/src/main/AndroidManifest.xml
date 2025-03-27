@@ -6,6 +6,10 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.BIND_VPN_SERVICE" tools:ignore="ProtectedPermissions"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
     <!-- Queries to specify which apps this app can interact with -->
     <queries>
@@ -57,6 +61,14 @@
             <meta-data
                     android:name="android.accessibilityservice"
                     android:resource="@xml/accessibility_service_config" />
+        </service>
+        <service
+                android:name=".TrafficMonitorVpnService"
+                android:permission="android.permission.BIND_VPN_SERVICE"
+                android:exported="false">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
         </service>
     </application>
 

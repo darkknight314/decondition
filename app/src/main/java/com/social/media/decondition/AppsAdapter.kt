@@ -6,41 +6,40 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.social.media.decondition.data.AppDetail
 
 class AppsAdapter(
     private var appsList: MutableList<AppDetail>,
-    private var isBlacklistView: Boolean, // Flag to determine current view
+    private var isMonitoredAppsView: Boolean,
     private val onAppSelected: (AppDetail) -> Unit
 ) : RecyclerView.Adapter<AppsAdapter.AppViewHolder>() {
 
     /**
-     * Updates the current view state and refreshes the adapter.
+     * Updates the current view state.
      *
-     * @param isBlacklist true if viewing blacklist, false if viewing whitelist.
+     * @param isMonitoredView true if viewing monitored apps, false if viewing all apps.
      */
-    fun setViewState(isBlacklist: Boolean) {
-        this.isBlacklistView = isBlacklist
+    fun setViewState(isMonitoredView: Boolean) {
+        this.isMonitoredAppsView = isMonitoredView
         notifyDataSetChanged()
     }
 
     /**
-     * Updates the adapter's list and refreshes the RecyclerView.
+     * Updates the adapter's list with optimized diffing for smoother UI updates.
      *
      * @param newList The new list of AppDetail objects to display.
      */
-    fun updateList(newList: MutableList<AppDetail>) {
-        this.appsList = newList
-        notifyDataSetChanged()
+    fun updateList(newList: List<AppDetail>) {
+        appsList.clear()
+        appsList.addAll(newList)
+        notifyDataSetChanged()  // Ensure RecyclerView updates
     }
 
-    /**
-     * ViewHolder class for app items.
-     */
     class AppViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        var appName: TextView = itemView.findViewById(R.id.appName)
-        var appIcon: ImageView = itemView.findViewById(R.id.appIcon)
+        val appName: TextView = itemView.findViewById(R.id.appName)
+        val appIcon: ImageView = itemView.findViewById(R.id.appIcon)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AppViewHolder {
@@ -60,34 +59,43 @@ class AppsAdapter(
 
     override fun getItemCount() = appsList.size
 
-    /**
-     * Displays a confirmation dialog based on the current view state.
-     *
-     * @param view The item view.
-     * @param app The AppDetail object representing the selected app.
-     */
     private fun showConfirmationDialog(view: View, app: AppDetail) {
         val context = view.context
         val dialogTitle: String
         val dialogMessage: String
 
-        if (isBlacklistView) {
-            dialogTitle = "Confirm Removal"
-            dialogMessage = "Do you want to remove ${app.appName} from the blacklist?"
+        if (isMonitoredAppsView) {
+            dialogTitle = "Remove App"
+            dialogMessage = "Stop monitoring ${app.appName}?"
         } else {
-            dialogTitle = "Confirm Addition"
-            dialogMessage = "Do you want to add ${app.appName} to the blacklist?"
+            dialogTitle = "Add App"
+            dialogMessage = "Start monitoring ${app.appName}?"
         }
 
         AlertDialog.Builder(context)
             .setTitle(dialogTitle)
             .setMessage(dialogMessage)
-            .setPositiveButton("Yes") { _, _ ->
-                onAppSelected(app)
-                // Do NOT remove the app from the adapter's list here
-                // Let the activity handle list modifications and adapter updates
-            }
+            .setPositiveButton("Yes") { _, _ -> onAppSelected(app) }
             .setNegativeButton("No", null)
             .show()
+    }
+
+    /**
+     * DiffUtil Callback to efficiently calculate list differences
+     */
+    private class AppDiffCallback(
+        private val oldList: List<AppDetail>,
+        private val newList: List<AppDetail>
+    ) : DiffUtil.Callback() {
+        override fun getOldListSize() = oldList.size
+        override fun getNewListSize() = newList.size
+
+        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            return oldList[oldItemPosition].packageName == newList[newItemPosition].packageName
+        }
+
+        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            return oldList[oldItemPosition] == newList[newItemPosition]
+        }
     }
 }
